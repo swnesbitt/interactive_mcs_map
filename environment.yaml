@@ -16,3 +16,15 @@ dependencies:
   - ipympl
   - pyarrow
   - jupyter_bokeh
+  - panel
+  - holoviews
+  - hvplot
+  - bokeh
+  - param
+  - kerchunk
+  - fsspec
+  - s3fs
+  - zarr
+  - pip
+  - pip:
+    - ipykernel

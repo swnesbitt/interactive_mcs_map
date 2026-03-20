@@ -1,41 +1,123 @@
 # Interactive Global Map of MCS Initiations
 
-Welcome! This directory contains the interactive visualization application used to map, filter, and track Mesoscale Convective System (MCS) initiations globally using natively subsetted Parquet track files and high-resolution Virtual Zarr IR imagery.
+Welcome! This repository contains the interactive visualization application used to map, filter, and track Mesoscale Convective System (MCS) initiations globally using natively subsetted Parquet track files and high-resolution Virtual Zarr IR imagery.
 
-## 🚀 Getting Started on the Keeling Cluster
+---
 
-As an undergraduate researcher, you will be running this interface directly on the Keeling computing cluster. Follow these steps to spin up the application:
+## 🚀 Deployment Guide for Students on Keeling
 
-### 1. Connecting to Keeling
-Ensure you are connected to the university VPN and SSH into Keeling, or use the **JupyterHub / VSCode Remote-SSH** capabilities to open this directory directly on a cluster node.
+> **Prerequisites**: You must have a university NetID and access to the Keeling research computing cluster. 
+
+---
+
+### Step 1 — Clone the Repository (first time only)
+
+SSH into Keeling and clone this repository into your home or scratch directory:
+
 ```bash
 ssh <netid>@keeling.earth.illinois.edu
-cd /data/keeling/a/snesbitt/python/feng_tracking/interactive_mcs_map/
+cd ~   # or cd /data/keeling/a/<netid>/
+git clone https://github.com/snesbitt-uiuc/interactive_mcs_map.git
+cd interactive_mcs_map
 ```
 
-### 2. Environment Setup
-The visualization engine requires a highly specific stack of libraries including `panel`, `holoviews`, `xarray`, `kerchunk`, and `cartopy`.
-Dr. Nesbitt maintains an active environment named `ba3bt-ssl` that has all dependencies pre-installed. Activate it using:
+---
+
+### Step 2 — Set Up a VS Code Tunnel on Keeling
+
+A **VS Code tunnel** lets you run VS Code in your local browser (or local VS Code app) while all computation executes on Keeling — no VPN needed.
+
+#### 2a. Start the tunnel on Keeling
+
+SSH into Keeling (or open any existing session) and run:
+
 ```bash
-conda activate ba3bt-ssl
+code tunnel
 ```
-*(Note: If you need a totally sandbox environment, you can alternatively scaffold one using the included `environment.yaml`: `conda env create -f environment.yaml`)*
 
-### 3. Launching the App
-The application lives natively inside a Jupyter Notebook:
-1. Open the file **`Panel_Interactive_Map.ipynb`** in your Jupyter or VSCode interactive environment.
-2. Select the `ba3bt-ssl` Python kernel on the top right.
-3. Run the single execution block containing `main().servable()`.
+> **First run only**: The CLI will ask you to authenticate with a GitHub or Microsoft account and give the tunnel a name (e.g. `keeling`). Follow the on-screen link to complete authentication in your browser.
+
+After authentication, the terminal will print a URL like:
+
+```
+https://vscode.dev/tunnel/keeling
+```
+
+Keep this terminal session alive (use `tmux` or `screen` so it persists if your SSH drops):
+
+```bash
+# Recommended — run inside a persistent tmux session
+tmux new -s tunnel
+code tunnel
+# Detach with Ctrl-B then D
+```
+
+#### 2b. Open the tunnel in your browser
+
+Navigate to **[https://vscode.dev/tunnel/keeling](https://vscode.dev/tunnel/keeling)** (substituting whatever name you chose) in any browser. You now have a full VS Code interface running directly on Keeling.
+
+Open the cloned `interactive_mcs_map/` folder via **File → Open Folder**.
+
+---
+
+### Step 3 — Create and Activate the Conda Environment
+
+Open the **VS Code integrated terminal** (`` Ctrl+` ``) and build the environment from the included spec file:
+
+```bash
+conda env create -f environment.yaml
+conda activate mcs_map_env
+```
+
+This installs all required dependencies: `panel`, `holoviews`, `xarray`, `kerchunk`, `cartopy`, `pyarrow`, `ipywidgets`, and more.
+
+> **This step only needs to be done once.** On future sessions, just re-run `conda activate mcs_map_env`.
+
+Next, register the environment as a Jupyter kernel so VS Code can find it:
+
+```bash
+python -m ipykernel install --user --name mcs_map_env --display-name "Python (mcs_map_env)"
+```
+
+---
+
+### Step 4 — Select the Python Kernel
+
+1. Open **`Panel_Interactive_Map.ipynb`** in VS Code.
+2. Click the kernel selector in the top-right corner of the notebook.
+3. Choose **`Python (mcs_map_env)`** from the list.
+
+If the kernel does not appear, reload the VS Code window (**Ctrl+Shift+P → Developer: Reload Window**) and try again.
+
+---
+
+### Step 5 — Launch the App
+
+Run the single notebook cell that ends with `main().servable()`.
+
+The Panel app will render inline inside the notebook output cell. A **"Loading IR Data…"** spinner will appear when storm imagery is being fetched — this typically takes **10–15 seconds** on first load.
+
+---
 
 ## 🖥 Using the Interface
 
-1. **Global Tracker Map**: Upon executing the cell, the app mounts the global initiation track records from `/data/scratch/a/snesbitt/zeng_tracking_v2.parquet` and renders an interactive global map. **Click any 1x1 degree square** on the map to filter initiations specifically within that geographic region.
-2. **Interactive Event Table**: Once a region region is clicked, a dynamically filtered tabular list of storm records will populate below the map. 
-3. **High-Res Trajectory Maps**: **Click on any storm row** in the table to trigger the extraction pipeline.
-    - The script immediately interrogates a massive, single-node virtual Zarr index (`gpm_mergir_vzarr/mergir_master.json`) to synchronously download and process the high-resolution IR imagery footprint bounds over a 9-hour sequence (-4 to +4 hours offset).
-    - A *Loading IR Data...* intercept will appear on the display. This takes approximately 10-15 seconds.
-    - Use the **`time index relative to start`** slider or the **`◄ Prev`** / **`Next ►`** buttons to scrub back and forth through the life cycle of the storm with zero lag!
+| Step | Action | Result |
+|------|--------|--------|
+| 1 | **Click any 1×1° grid square** on the global map | Filters the storm list to that region |
+| 2 | **Click a storm row** in the table below the map | Triggers IR imagery extraction for that event |
+| 3 | **Drag the time slider** or use **◄ Prev / Next ►** | Scrubs through the ±4 hour storm lifecycle with zero lag |
+
+The IR viewer shows:
+- High-resolution brightness-temperature imagery
+- MCS contours at 225 K and 241 K thresholds
+- Storm trajectory line and current-position marker
+
+---
 
 ## ⚙️ Architecture Notes
-- The core data model dynamically projects all coordinates over the `-180` and `180` Dateline limits and stitches geospatial data automatically using robust underlying `xarray` bounding logic. 
-- You should never modify `panel_interactive_map.py` unless you are developing native feature extensions.
+
+- **Data source**: Parquet track file at `/data/scratch/a/snesbitt/zeng_tracking_v2.parquet`
+- **IR imagery**: Single-node Virtual Zarr index at `/data/gpm/a/snesbitt/gpm_mergir_vzarr/mergir_master.json` — treating the multi-decade MERG-IR dataset as one high-performance array
+- **HoloMap caching**: All 9 sequence frames are pushed to the browser's DOM upfront, making timeline scrubbing instantaneous
+- **Dateline handling**: Automatic `PlateCarree` re-centering ensures storms crossing ±180° or 0°/360° render without clipping
+- **Do not modify** `panel_interactive_map.py` unless you are developing new feature extensions — all user-facing interactions are controlled from the notebook
