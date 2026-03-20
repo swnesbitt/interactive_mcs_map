@@ -17,7 +17,7 @@ SSH into Keeling and clone this repository into your home or scratch directory:
 ```bash
 ssh <netid>@keeling.earth.illinois.edu
 cd ~   # or cd /data/keeling/a/<netid>/
-git clone https://github.com/snesbitt-uiuc/interactive_mcs_map.git
+git clone https://github.com/swnesbitt/interactive_mcs_map.git
 cd interactive_mcs_map
 ```
 
